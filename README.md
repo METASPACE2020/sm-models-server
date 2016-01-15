@@ -1,2 +1,2 @@
-# evaluation-server
-Prototype for the evaluation server (not ready).
+# model-server
+Prototype for the model server (not ready).
