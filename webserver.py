@@ -4,6 +4,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 
 import os
+import cPickle
 from datetime import datetime,time,date,timedelta
 from os import curdir,sep,path
 import psycopg2,psycopg2.extras
@@ -41,6 +42,8 @@ parser = argparse.ArgumentParser(description='IMS evaluation results webserver.'
 parser.add_argument('--gifs', dest='gifs', type=str, help='directory with animated gif subdirectories')
 parser.set_defaults(gifs='static/rnn_gifs')
 args = parser.parse_args()
+
+dirname_pickled = 'results_pickled'
 
 adducts = ['H', 'K', 'Na']
 correct_fnames = {
@@ -406,43 +409,55 @@ def compute_metrics(res):
 	return res
 
 def add_results_pipeline(dirname):
-	global eval_results
+	global eval_results, eval_result_names
 	my_print("Reading results from %s and computing metrics:" % dirname)
 	for fname in glob.glob('%s/*.txt' % dirname):
-		all_res = {}
-		all_res['name'] = ".".join(fname.split('/')[-1].split('.')[:-1])
-		if (all_res['name'] == 'decoy_dataset_chemnoise_centroids_IMS_spatial_all_adducts_full_results'):
-			all_res['name'] = 'pipeline'
-		if all_res['name'] in eval_result_names:
-			my_print('\t...%s already processed, skipping...' % all_res['name'])
-			continue
-
-		if all_res['name'] in result_datasets:
-			all_res['dataset'] = result_datasets[all_res['name']]
-
-		with open(fname) as f:
-			my_print("\t%s" % fname)
-			# headers
-			headers = f.readline().strip().split(',')
-			all_res.update( { h : {} for h in headers[2:] } )
-			# read line by line
-			for line in f:
-				arr = line.strip().split(',')
-				key = (arr[0], arr[1])
-				for i in xrange(2, len(arr)-1):
-					all_res[headers[i]][key] = float(arr[i]) if arr[i] != 'nan' else 0.0
-				all_res[headers[-1]][key] = 1 if arr[-1] == 'True' else 0
-		if 'moc' in all_res and 'spat' in all_res and 'spec' in all_res:
-			all_res['MSM'] = { k : all_res['moc'][k] * all_res['spat'].get(k, 0.0) * all_res['spec'].get(k, 0.0) for k in all_res['moc'] }
-		## computing metrics
-		for k in all_res:
-			if k == 'name' or k == 'mz' or k =='dataset':
+		fname_pickled = dirname_pickled + '/' + ".".join(fname.split('/')[-1].split('.')[:-1]) + ".pkl"
+		if os.path.exists( fname_pickled ):
+			my_print("\tloading preprocessed %s from %s..." % (fname, fname_pickled) )
+			pickled_res = cPickle.load(open(fname_pickled))
+		else:
+			my_print('\t...recreating preprocessed file...')
+			all_res = {}
+			all_res['name'] = ".".join(fname.split('/')[-1].split('.')[:-1])
+			if (all_res['name'] == 'decoy_dataset_chemnoise_centroids_IMS_spatial_all_adducts_full_results'):
+				all_res['name'] = 'pipeline'
+			if all_res['name'] in eval_result_names:
+				my_print('\t...%s already processed, skipping...' % all_res['name'])
 				continue
-			cur_res = { 'name' : all_res['name'] + ', ' + k, 'dataset' : all_res.get('dataset', 'SIM0001_twosquares_matlab'), 'metric' : all_res[k] }
-			my_print('\t\t%s' % cur_res['name'])
-			cur_res = compute_metrics(cur_res)
+
+			if all_res['name'] in result_datasets:
+				all_res['dataset'] = result_datasets[all_res['name']]
+
+			with open(fname) as f:
+				my_print("\t%s" % fname)
+				# headers
+				headers = f.readline().strip().split(',')
+				all_res.update( { h : {} for h in headers[2:] } )
+				# read line by line
+				for line in f:
+					arr = line.strip().split(',')
+					key = (arr[0], arr[1])
+					for i in xrange(2, len(arr)-1):
+						all_res[headers[i]][key] = float(arr[i]) if arr[i] != 'nan' else 0.0
+					all_res[headers[-1]][key] = 1 if arr[-1] == 'True' else 0
+			if 'moc' in all_res and 'spat' in all_res and 'spec' in all_res:
+				all_res['MSM'] = { k : all_res['moc'][k] * all_res['spat'].get(k, 0.0) * all_res['spec'].get(k, 0.0) for k in all_res['moc'] }
+			## computing metrics
+			pickled_res = []
+			for k in all_res:
+				if k == 'name' or k == 'mz' or k =='dataset':
+					continue
+				cur_res = { 'name' : all_res['name'] + ', ' + k, 'dataset' : all_res.get('dataset', 'SIM0001_twosquares_matlab'), 'metric' : all_res[k] }
+				my_print('\t\t%s' % cur_res['name'])
+				cur_res = compute_metrics(cur_res)
+				pickled_res.append(cur_res)
+			cPickle.dump(pickled_res, open(fname_pickled, 'w'))
+
+		for cur_res in pickled_res:
 			eval_results.append(cur_res)
 			eval_result_names[cur_res['name']] = len(eval_results) - 1
+
 
 def add_results_data(dirname):
 	global eval_results
