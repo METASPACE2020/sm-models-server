@@ -1,0 +1,45 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
+{% end %}
+
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        $.getJSON("/ajax/gifs/", function (data) {
+          var gdata = data["data"];
+          console.log(gdata);
+          var iRow = 0;
+          for (var i=0; i<gdata.length; i++) {
+            if (i % 6 == 0) {
+              $("#gifs").append('<div class="row" id="row-' + iRow.toString() + '"></div>');
+              iRow += 1;
+            }
+            $("#row-" + (iRow-1).toString()).append('<div class="col-sm-2"><button type="button" class="btn btn-info" data-toggle="collapse" data-target="#data-' + gdata[i]["dir"] + '">' + gdata[i]["dir"] + '</button> <p></p> <div id="data-' + gdata[i]["dir"] + '" class="collapse out"><div id="ul-' + gdata[i]["dir"] + '"></div></div>');
+            if ('errgif' in gdata[i]) {
+              $("#ul-" + gdata[i]["dir"]).append('<div><a href="/' + gdata[i]["errgif"] + '" class="fancybox-ajax" rel="group">Pred. MSEs</a></div></div>');
+            }
+            for (var j=0; j<gdata[i]["fnames"].length; j++) {
+              $("#ul-" + gdata[i]["dir"]).append('<div><a href="/' + gdata[i]["fnames"][j] + '" class="fancybox-ajax" rel="group">' + gdata[i]["start"][j] + ' &ndash; ' + gdata[i]["end"][j] + '</a></div></div>');
+            }
+          }
+          $(".fancybox").fancybox();
+          $(".fancybox-ajax").fancybox({type : "image"});
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">RNN gifs</div>
+      <div class="panel-body">
+        <div class="container-fluid" id="gifs">
+        </div>
+      </div>
+    </div>
+  </div>
+{% end %}

@@ -1,0 +1,84 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
+
+    <!-- AmCharts -->
+    <script src="{{ static_url("js/amcharts/amcharts.js") }}"></script>
+    <script src="{{ static_url("js/amcharts/serial.js") }}"></script>
+{% end %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var job_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $.getJSON("/ajax/jobdescription/" + job_id + "/", function (data) {
+          $("#about-name").text( data["description"] );
+          $("#about-dataset").text( data["dataset"] );
+        });
+        $.getJSON("/ajax/fullimages/" + job_id + "/", function (data) {
+          var tbl_data = data["data"];
+          var tbl_spark = $('#table-images').DataTable( {
+            data: tbl_data,
+            order: [[ 3, "asc" ]],
+            aLengthMenu: [100, 200, 500],
+            "columnDefs": [
+              // { "render": function ( data ) { return data.slice(0, 19).replace('T', ' '); }, "targets": [8] },
+              // { "render": function ( data, type, row ) { if (row[4]) { return sin_render_time(data); } else { return ""; } }, "targets": [9] },
+              // { "render": function ( data, type, row ) { return sin_render_dataset(row[0], data); }, "targets": [1] },
+              { "render": function ( data, type, row ) { return data.toFixed(4); }, "targets": [3] },
+              { "render": function ( data, type, row ) { return sin_render_substance(row[0], data); }, "targets": [1, 2] },
+              { "render": function ( data, type, row ) { 
+                return sin_render_jobresult(job_id + "/" + row[0]);
+              }, "targets": [4] },
+              // { "visible": false,  "targets": [ 0, 2, 4, 6 ] },
+            ],
+            "fnDrawCallback": function( oSettings ) {
+              $(".fancybox-ajax").fancybox({type : "image"});
+            }
+          } );
+        } );
+      } );
+{% end %}
+
+{% block body %}
+    <div class="page-header">
+      <div class="row">
+        <div class="col-md-6">
+          <h2 id="about-dataset"><small>Dataset</small></h2>
+        </div>
+        <div class="col-md-6">
+          <div class="pull-right">
+            <h2 id="about-name"><small>Name</small></h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-primary">
+      <div class="panel-heading">Individual images</div>
+      <table id="table-images" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>Substance id</th>
+            <th>Substance</th>
+            <th>Formula</th>
+            <th>Image entropy</th>
+            <th></th>
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th>Substance id</th>
+            <th>Substance</th>
+            <th>Formula</th>
+            <th>Image entropy</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+{% end %}

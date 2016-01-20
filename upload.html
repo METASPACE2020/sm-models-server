@@ -1,0 +1,60 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
+
+    <!-- AmCharts -->
+    <script src="{{ static_url("js/amcharts/amcharts.js") }}"></script>
+    <script src="{{ static_url("js/amcharts/serial.js") }}"></script>
+
+    <link href="{{ static_url("css/fileinput.min.css") }}" media="all" rel="stylesheet" type="text/css" />
+    <script src="{{ static_url("js/canvas-to-blob.min.js") }}"></script>
+    <script src="{{ static_url("js/fileinput.min.js") }}"></script>
+{% end %}
+
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $('#heading-result').text(result_id.toString());
+        $("#input-4").fileinput({
+          uploadUrl: "/ajax/upload-metric", // server upload action
+          uploadAsync: true,
+          // showCaption: true
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">Upload new result</div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-sm-12">
+            <p>You can upload the results as a comma-separated text file in the following format:</p>
+            <pre>sf,adduct,mz,metric1,metric2,...
+C11H10O,H,159.080441496,value11,value12,...
+C11H10O,He,162.075219706,value21,value22,...
+C11H10O,Li,164.087739136,value31,value32,...</pre>
+            <p>Here <code>metric1,metric2,...</code> may represent an arbitrarily long set of your own metric names, and then on every line <code>valueN1,valueN2,...</code> represents the values of these metrics for each sf+adduct pair. The <code>mz</code> field is optional, it is not used in the evaluation.
+
+            <p>All metrics will be extracted from the file, and the corresponding rows will be added to the <a href="/metrics/">metrics table</a>. The rows will be titled with your file name (dropping the extension) and the metric name as specified in the first (header) line of the file.</p>
+
+            <p>Note that you can add multiple files at once.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-12">
+            <label class="control-label">Select Files</label>
+            <input id="input-4" name="upmetric[]" type="file" multiple class="file-loading">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% end %}
+
+

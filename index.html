@@ -1,0 +1,27 @@
+{% extends "main.html" %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        // $("#nav-results").addClass("active");
+        // $("#nav-results a").attr("href", "#");
+        // $("#nav-results a").html( $("#nav-results a").html() + ' <span class="sr-only">(current)</span>' );
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <!--div class="panel panel-primary">
+      <div class="panel-heading">Test server on </div>
+      <div class="panel-body">
+        <p>This test web server for IMS data processing is built with Tornado and is (trying to) communicate with Spark.</p>
+      </div>
+    </div-->
+    <div class="panel panel-primary">
+      <div class="panel-body">
+        Please choose from the navigation panel.
+      </div>
+    </div>
+  </div>
+{% end %}
+

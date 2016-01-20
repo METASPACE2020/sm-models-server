@@ -1,0 +1,76 @@
+{% extends "main.html" %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        // var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        // $('#heading-result').text(result_id.toString());
+        $.getJSON("/ajax/textregr/", function (data) {
+          var targets = {};
+          console.log(targets);
+          for (var i=0; i<data["data"].length; i++) {
+            if (!(data["data"][i][0] in targets)) {
+              targets[data["data"][i][0]] = [];
+            }
+            targets[data["data"][i][0]].push(data["data"][i]);
+          }
+          var i = 0;
+          for (var key in targets) {
+            if (i == 0) {
+              $('#tabs').append('<li class="active"><a data-toggle="tab" href="#' + i.toString() + '">' + key + '</a></li>');
+              $('#tabcontent').append('<div id="' + i.toString() + '" class="tab-pane fade in active"></div>');
+            } else {
+              $('#tabs').append('<li><a data-toggle="tab" href="#' + i.toString() + '">' + key + '</a></li>');
+              $('#tabcontent').append('<div id="' + i.toString() + '" class="tab-pane fade"></div>');
+            }
+            $('#' + i.toString()).append('<h3>' + key + '</h3><p><table id="tbl-' + i.toString() + '" class="table table-striped" cellspacing="0" width="100%">\
+        <thead> \
+          <tr> \
+            <th width="20%"></th> \
+            <th width="20%"></th> \
+            <th width="20%"></th> \
+            <th width="20%" colspan="2">Train</th> \
+            <th width="20%" colspan="2">Test</th> \
+          </tr> \
+          <tr> \
+            <th width="20%">Target</th> \
+            <th width="20%">Features</th> \
+            <th width="20%">Model</th> \
+            <th width="10%">MAE</th> \
+            <th width="10%">RMSE</th> \
+            <th width="10%">MAE</th> \
+            <th width="10%">RMSE</th> \
+          </tr> \
+        </thead> \
+        <tfoot> \
+        </tfoot> \
+      </table></p>');
+
+            var tbldata = targets[key];
+            var tbl = $('#tbl-' + i.toString()).dataTable( {
+               data: tbldata,
+               order: [[ 6, "asc" ]],
+               aLengthMenu: [100, 200, 500],
+               "columnDefs": [
+               ]
+            } );
+            i += 1;
+          }
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">Text regression results</div>
+      <div class="panel-body">
+        <p>Different target variables are shown in different tabs.</p>
+    <ul class="nav nav-tabs nav-justified" id="tabs">
+    </ul>
+    <div class="tab-content" id="tabcontent">
+    </div>
+      </div>
+    </div>
+  </div>
+{% end %}

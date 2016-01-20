@@ -1,0 +1,58 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
+{% end %}
+
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        $("#nav-datasets").addClass("active");
+        $("#nav-datasets a").attr("href", "#");
+        $("#nav-datasets a").html( $("#nav-datasets a").html() + ' <span class="sr-only">(current)</span>' );
+
+        var tbl_datasets = $('#tbl-datasets').dataTable( {
+          ajax: "/ajax/datasets/",
+          processing: true,
+          serverSide: true,
+          order: [[ 0, "asc" ]],
+          aLengthMenu: [10, 20, 50],
+          bFilter: false,
+          // oLanguage: myTableLanguagePlayers,
+          "columnDefs": [
+            // { "render": function ( data ) { return sin_render_fullextract(data); }, "targets": [4] },
+          ],
+        } );
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">Datasets</div>
+      <table id="tbl-datasets" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>Dataset id</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Docs</th>
+            <th>Words</th>
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th>Dataset id</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Docs</th>
+            <th>Words</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+{% end %}

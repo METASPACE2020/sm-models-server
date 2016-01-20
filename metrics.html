@@ -1,0 +1,151 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
+
+    <!-- AmCharts -->
+    <script src="{{ static_url("js/amcharts/amcharts.js") }}"></script>
+    <script src="{{ static_url("js/amcharts/serial.js") }}"></script>
+
+    <link href="{{ static_url("css/fileinput.min.css") }}" media="all" rel="stylesheet" type="text/css" />
+    <!--script src="{{ static_url("js/canvas-to-blob.min.js") }}"></script-->
+    <script src="{{ static_url("js/fileinput.min.js") }}"></script>
+{% end %}
+
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $('#heading-result').text(result_id.toString());
+        $.getJSON("/ajax/metrics/", function (data) {
+          var datasets = {};
+          for (var i=0; i<data["data"].length; i++) {
+            if (!(data["data"][i][0] in datasets)) {
+              datasets[data["data"][i][0]] = [];
+            }
+            datasets[data["data"][i][0]].push(data["data"][i]);
+          }
+          // console.log(datasets);
+          // console.log(Object.keys(datasets).sort());
+          var i = 0;
+          var keys_sorted = Object.keys(datasets).sort();
+          for (var j in keys_sorted ) {
+            key = keys_sorted[j];
+            if (i == 0) {
+              $('#tabs').append('<li class="active"><a data-toggle="tab" href="#' + i.toString() + '">' + key + '</a></li>');
+              $('#tabcontent').append('<div id="' + i.toString() + '" class="tab-pane fade in active"></div>');
+            } else {
+              $('#tabs').append('<li><a data-toggle="tab" href="#' + i.toString() + '">' + key + '</a></li>');
+              $('#tabcontent').append('<div id="' + i.toString() + '" class="tab-pane fade"></div>');
+            }
+            $('#' + i.toString()).append('<h3>' + key + '</h3><p><table id="tbl-' + i.toString() + '" class="table table-striped" cellspacing="0" width="100%">\
+        <thead> \
+          <tr> \
+            <th></th> \
+            <th width="20%"></th> \
+            <th colspan="3"><span data-toggle="tooltip" title="Largest # of molecules detected with 10% FDR"># mols. 10% FDR</span></th> \
+            <th width="5%"></th> \
+            <th width="5%"></th> \
+            <th width="5%"></th> \
+            <th width="5%"></th> \
+            <th colspan="2"><span data-toggle="tooltip" title="# of molecules detected in the entire list">Found molecules</span></th> \
+            <th colspan="2">Ranking metrics</th> \
+            <th colspan="2">L<sub>p</sub> metrics</th> \
+            <th colspan="3">Areas, true molecules</th> \
+            <th colspan="1">Areas, false molecules</th> \
+          </tr> \
+          <tr> \
+            <th>Dataset</th> \
+            <th width="20%">Model</th> \
+            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and H+ adduct">H</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and K+ adduct">K</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and Na+ adduct">Na</span></th> \
+            <th width="10%" colspan="2"><span data-toggle="tooltip" title="FDR graph for three adducts<br/>and comparison FDR graph for 2 models">FDR graph</th> \
+            <th width="5%"><span data-toggle="tooltip" title="Graph with estimated FDR curve">Est. FDR</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Graph with true FDR vs. estimated FDR curve">Joint FDR</span></th> \
+            <th><span data-toggle="tooltip" title="Total # of molecules detected">Total</span></th> \
+            <th><span data-toggle="tooltip" title="Total # of molecules detected divided by the total # of molecules">Share</span></th> \
+            <th><span data-toggle="tooltip" title="Area under curve metric">AUC</span></th> \
+            <th><span data-toggle="tooltip" title="NDCG metric">NDCG</span></th> \
+            <th>L<sub>1</sub>, avg. over found</th> \
+            <th>L<sub>2</sub>, avg. over found</th> \
+            <th>true / correct</th> \
+            <th>true / total</th> \
+            <th>false / total</th> \
+            <th>Avg. # pixels</th> \
+          </tr> \
+        </thead> \
+        <tfoot> \
+        </tfoot> \
+      </table></p>');
+
+            var tbldata = datasets[key];
+            console.log(tbldata);
+            var tbl = $('#tbl-' + i.toString()).dataTable( {
+               data: tbldata,
+               order: [[ 9, "desc" ], [11, 'desc']],
+               aLengthMenu: [100, 200, 500],
+               "columnDefs": [
+                  { "render": function ( data ) { if (data == -1) {
+                      return '';
+                    } else {
+                      return data.toFixed(3);
+                    } }, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18] },
+                  { "render": function ( data ) { if (data == -1) { return ''; } else { return data;}
+                    }, "targets": [9] },
+                  { "render": function ( data, type, row ) { 
+                    if (row[9] == -1) {
+                      return '';
+                    } else {
+                      return '<button type="button" class="btn btn-sm btn-info fancybox-ajax" href="/fdrimage/real/' + data + '">FDR</button>'; 
+                    } }, "targets": [5] },
+                  { "render": function ( data, type, row ) { 
+                    if (row[9] == -1) {
+                      return '';
+                    } else {
+                      var res = '<div class="dropdown"><button type="button" id="ddMenu' + data.replace(' ', '_').replace(',', '') + '" class="btn btn-sm btn-info dropdown-toggle" aria-haspopup="true" data-toggle="dropdown" aria-expanded="false">Cmp <span class="caret"></span></button><ul class="dropdown-menu" aria-labelledby="ddMenu' + data.replace(' ', '_').replace(',', '') + '">';
+                      for (var j=0; j<tbldata.length; j=j+1) {
+                        if (tbldata[j][6] != data) {
+                          res += '<li><a class="fancybox-ajax" href="/fdrimage/real/' + data + '/' + tbldata[j][6] + '">' + tbldata[j][6] + '</a></li>';
+                        }
+                      }
+                      res += '</ul></div>'
+                      return res;
+                    } }, "targets": [6] },
+                  { "render": function ( data, type, row ) { 
+                    return '<button type="button" class="btn btn-sm btn-danger fancybox-ajax" href="/fdrimage/est/' + data + '">e.FDR</button>'; 
+                    }, "targets": [7] },
+                  { "render": function ( data, type, row ) { 
+                    if (row[5] == -1) {
+                      return '';
+                    } else {
+                      return '<button type="button" class="btn btn-sm btn-success fancybox-ajax" href="/fdrimage/evst/' + data + '">j.FDR</button>'; 
+                    } }, "targets": [8] },
+                  { "visible": false,  "targets": [ 0, 13, 14, 15, 16 ] },
+                ],
+            } );
+            i += 1;
+          }
+          $(".fancybox-ajax").fancybox({type : "image"});
+          $('[data-toggle="tooltip"]').tooltip({html: true});
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">General table of evaluation metrics</div>
+      <div class="panel-body">
+        <p>Different datasets are shown in different tabs.</p>
+        <ul class="nav nav-tabs nav-justified" id="tabs">
+        </ul>
+        <div class="tab-content" id="tabcontent"></div>
+      </div>
+    </div>
+  </div>
+{% end %}
+
+

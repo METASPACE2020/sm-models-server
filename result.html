@@ -1,0 +1,79 @@
+{% extends "main.html" %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $('#heading-result').text(result_id.toString());
+        $.getJSON("/ajax/results/", function (data) {
+          var tbldata = data["data"];
+          var tbl = $('#tbl-results').dataTable( {
+            data: tbldata,
+            columns: [
+                {
+                  "className":      'details-control',
+                  "orderable":      false,
+                  "data":           null,
+                  "defaultContent": '<img src="{{ static_url("images/details_open.png") }}"/>'
+                },
+                { "title": "Topic" },
+                { "title": "Description" }
+            ],
+            order: [[ 1, "asc" ]],
+            aLengthMenu: [100, 200, 500],
+            // oLanguage: myTableLanguagePlayers,
+            "columnDefs": [
+              { "render": function ( data, type, row ) { return sin_render_shorttopic(data); }, "targets": [2] },
+              // { "visible": false,  "targets": [ 5, 8 ] },
+            ]
+          } );
+          $('#tbl-results tbody').on('click', 'td.details-control', function () {
+              var tr = $(this).closest('tr');
+              var row = tbl.api(true).row( tr );
+              if ( row.child.isShown() ) {
+                  // This row is already open - close it
+                  row.child.hide();
+                  $(this).html('<img src="{{ static_url("images/details_close.png") }}"/>')
+                  tr.removeClass('shown');
+              }
+              else {
+                  // Open this row
+                  row.child( sin_render_fulltopic(row.data()[2]) ).show();
+                  $(this).html('<img src="{{ static_url("images/details_close.png") }}"/>')
+                  tr.addClass('shown');
+              }
+          } );
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">Showing results</div>
+      <div class="panel-body">
+        <p>Press the plus button on the left to expand a topic.</p>
+      </div>
+    </div>
+    <div class="panel panel-primary">
+      <div class="panel-heading">LDA topics for <span id="heading-result"></span></div>
+       <table id="tbl-results" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th width="30pt"></th>
+            <th width="10%">Topic</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th></th>
+            <th>Topic</th>
+            <th>Description</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+{% end %}

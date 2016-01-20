@@ -1,0 +1,67 @@
+{% extends "main.html" %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $('#heading-result').text(result_id.toString());
+        $.getJSON("/ajax/results/", function (data) {
+          var targets = {};
+          for (var i=0; i<data["data"].length; i++) {
+            if (!(data["data"][i]["target"] in targets)) {
+              targets[data["data"][i]["target"]] = [];
+            }
+            targets[data["data"][i]["target"]].push(data["data"][i]);
+          }
+          var tbldata = data["data"];
+          var tbl = $('#tbl-results').dataTable( {
+            data: tbldata,
+            order: [[ 7, "asc" ]],
+            aLengthMenu: [100, 200, 500],
+            "columnDefs": []
+          } );
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">Text regression results</div>
+<!--       <div class="panel-body">
+        <p>Press the plus button on the left to expand a topic.</p>
+      </div> -->
+    </div>
+    <div class="panel panel-primary">
+      <div class="panel-heading">LDA topics for <span id="heading-result"></span></div>
+       <table id="tbl-results" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th width="20%">Target</th>
+            <th width="20%">Features</th>
+            <th width="20%">Model</th>
+            <th width="20%" colspan="2">Train</th>
+            <th width="20%" colspan="2">Test</th>
+          </tr>
+          <tr>
+            <th width="20%"></th>
+            <th width="20%"></th>
+            <th width="20%"></th>
+            <th width="10%">MAE</th>
+            <th width="10%">RMSE</th>
+            <th width="10%">MAE</th>
+            <th width="10%">RMSE</th>
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th></th>
+            <th>Topic</th>
+            <th>Description</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+{% end %}

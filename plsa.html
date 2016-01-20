@@ -1,0 +1,71 @@
+{% extends "main.html" %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        // $("#nav-bigartm").addClass("active");
+        // $("#nav-bigartm a").attr("href", "#");
+        // $("#nav-bigartm a").html( $("#nav-bigartm a").html() + ' <span class="sr-only">(current)</span>' );
+
+        $('#tbl-plsa').dataTable( {
+          ajax: "/ajax/plsa/" + result_id.toString(),
+          processing: true,
+          serverSide: true,
+          order: [[ 0, "asc" ]],
+          aLengthMenu: [100, 200, 500],
+          // oLanguage: myTableLanguagePlayers,
+          "columnDefs": [
+            { "render": function ( data, type, row ) { 
+              var res = "";
+              for (var i=0; i < data.length; i += 1) {
+                res += '<span style="margin:0 0px; padding-right:10px;" rel="tooltip" data-html="true" title="<b>' + data[i][1].toString() + '</b>">' + data[i][0] + "</span> ";
+              }
+              return res; }, "targets": [1] },
+            // { "visible": false,  "targets": [ 1 ] },
+          ],
+          "initComplete" : function(oSettings, json) {
+            $('#tbl-plsa').tooltip({
+              selector: "span[rel=tooltip]",
+              html: true
+            });
+          }
+        } );
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <!--div class="panel panel-primary">
+      <div class="panel-heading">Test server on </div>
+      <div class="panel-body">
+        <p>This test web server for IMS data processing is built with Tornado and is (trying to) communicate with Spark.</p>
+      </div>
+    </div-->
+    <div class="panel panel-primary">
+      <div class="panel-heading">BigARTM results</div>
+      <table id="tbl-plsa" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Words</th>
+            <!-- <th>Dataset</th>
+            <th>Result</th>
+            <th>Topics</th> -->
+            <!-- <th>Date</th> -->
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th>Topic</th>
+            <th>Words</th>
+            <!-- <th>Dataset</th>
+            <th>Result</th>
+            <th>Topics</th> -->
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+{% end %}
