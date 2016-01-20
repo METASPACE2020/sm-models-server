@@ -192,7 +192,7 @@ class AjaxHandler(tornado.web.RequestHandler):
 class IndexHandler(tornado.web.RequestHandler):
 	@gen.coroutine
 	def get(self):
-		self.render("index.html")
+		self.render("html/index.html")
 
 html_pages = {
 }
@@ -201,13 +201,13 @@ class SimpleHtmlHandlerWithId(tornado.web.RequestHandler):
 	@gen.coroutine
 	def get(self, id):
 		my_print("Request: %s, Id: %s" % (self.request.uri, id))
-		self.render( html_pages.get( self.request.uri.split('/')[1], self.request.uri.split('/')[1] + ".html") )
+		self.render( html_pages.get( self.request.uri.split('/')[1], 'html/' + self.request.uri.split('/')[1] + ".html") )
 
 class SimpleHtmlHandler(tornado.web.RequestHandler):
 	@gen.coroutine
 	def get(self):
 		my_print("Request: %s" % self.request.uri)
-		self.render( html_pages.get( self.request.uri.split('/')[1], self.request.uri.split('/')[1] + ".html") )
+		self.render( html_pages.get( self.request.uri.split('/')[1], 'html/' + self.request.uri.split('/')[1] + ".html") )
 
 class MyFileHandler(tornado.web.StaticFileHandler):
     def initialize(self, path):
@@ -483,8 +483,8 @@ def main():
 	try:
 		read_correct_intensities()
 		# add_results_data('log_results')
-		add_results_pipeline('results_pipeline')
-		# add_results_pipeline('results_tmp')
+		# add_results_pipeline('results_pipeline')
+		add_results_pipeline('results_tmp')
 		port = 6789
 		torn_app = Application()
 		http_server = tornado.httpserver.HTTPServer(torn_app)
