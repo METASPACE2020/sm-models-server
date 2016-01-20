@@ -45,32 +45,32 @@
           <tr> \
             <th></th> \
             <th width="20%"></th> \
-            <th colspan="3"><span data-toggle="tooltip" title="Largest # of molecules detected with 10% FDR"># mols. 10% FDR</span></th> \
+            <th colspan="3"><span data-toggle="tooltip" title="Largest # of sum formulas annotated with 0.1 FDR"># mols. 0.1 FDR</span></th> \
             <th width="5%"></th> \
             <th width="5%"></th> \
             <th width="5%"></th> \
             <th width="5%"></th> \
-            <th colspan="2"><span data-toggle="tooltip" title="# of molecules detected in the entire list">Found molecules</span></th> \
+            <th colspan="2"><span data-toggle="tooltip" title="# of sum formulas annotated in the entire list">Annotated sum formulas</span></th> \
             <th colspan="2">Ranking metrics</th> \
             <th colspan="2">L<sub>p</sub> metrics</th> \
-            <th colspan="3">Areas, true molecules</th> \
-            <th colspan="1">Areas, false molecules</th> \
+            <th colspan="3">Areas, true sf</th> \
+            <th colspan="1">Areas, false sf</th> \
           </tr> \
           <tr> \
             <th>Dataset</th> \
             <th width="20%">Model</th> \
-            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and H+ adduct">H</span></th> \
-            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and K+ adduct">K</span></th> \
-            <th width="5%"><span data-toggle="tooltip" title="Molecules detected<br/>with 10% FDR and Na+ adduct">Na</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Sum formulas annotated<br/>with 0.1 FDR and H+ adduct">H</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Sum formulas annotated<br/>with 0.1 FDR and K+ adduct">K</span></th> \
+            <th width="5%"><span data-toggle="tooltip" title="Sum formulas annotated<br/>with 0.1 FDR and Na+ adduct">Na</span></th> \
             <th width="10%" colspan="2"><span data-toggle="tooltip" title="FDR graph for three adducts<br/>and comparison FDR graph for 2 models">FDR graph</th> \
             <th width="5%"><span data-toggle="tooltip" title="Graph with estimated FDR curve">Est. FDR</span></th> \
             <th width="5%"><span data-toggle="tooltip" title="Graph with true FDR vs. estimated FDR curve">Joint FDR</span></th> \
-            <th><span data-toggle="tooltip" title="Total # of molecules detected">Total</span></th> \
-            <th><span data-toggle="tooltip" title="Total # of molecules detected divided by the total # of molecules">Share</span></th> \
+            <th><span data-toggle="tooltip" title="Total # of sum formulas annotated">Total</span></th> \
+            <th><span data-toggle="tooltip" title="Total # of sum formulas annotated divided by the total # of sum formulas">Share</span></th> \
             <th><span data-toggle="tooltip" title="Area under curve metric">AUC</span></th> \
             <th><span data-toggle="tooltip" title="NDCG metric">NDCG</span></th> \
-            <th>L<sub>1</sub>, avg. over found</th> \
-            <th>L<sub>2</sub>, avg. over found</th> \
+            <th>L<sub>1</sub>, avg. over annotated</th> \
+            <th>L<sub>2</sub>, avg. over annotated</th> \
             <th>true / correct</th> \
             <th>true / total</th> \
             <th>false / total</th> \
@@ -123,7 +123,7 @@
                     } else {
                       return '<button type="button" class="btn btn-sm btn-success fancybox-ajax" href="/fdrimage/evst/' + data + '">j.FDR</button>'; 
                     } }, "targets": [8] },
-                  { "visible": false,  "targets": [ 0, 13, 14, 15, 16 ] },
+                  { "visible": false,  "targets": [ 0, 13, 14, 15, 16, 17, 18 ] },
                 ],
             } );
             i += 1;

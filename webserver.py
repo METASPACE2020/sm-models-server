@@ -483,8 +483,8 @@ def main():
 	try:
 		read_correct_intensities()
 		# add_results_data('log_results')
-		# add_results_pipeline('results_pipeline')
-		add_results_pipeline('results_tmp')
+		add_results_pipeline('results_pipeline')
+		# add_results_pipeline('results_tmp')
 		port = 6789
 		torn_app = Application()
 		http_server = tornado.httpserver.HTTPServer(torn_app)
