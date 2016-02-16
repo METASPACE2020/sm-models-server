@@ -63,7 +63,7 @@ result_datasets = {
 	'pipe_decoy' : 'SIM0001_twosquares_matlab',
 	'pipe_spheroid' : 'SIM0002_simulated_spheroid',
 	'pipe_simpleshapes' : 'SIM0003_simple_shapes',
-	'pipe_mousebrain_20um' : 'mousebrain_20um'
+	'pipe_mousebrain_20um' : 'mousebrain_20um',
 }
 
 correct_intensities = {}
@@ -233,8 +233,11 @@ class FDRImageHandler(tornado.web.RequestHandler):
 		sns.set_style("darkgrid")
 		if graph_type == 'est':
 			ax = plt.axes()
-			ax.set_ylim((0.0, 1.0))
-			sns.tsplot(data=res['fdrest_pd'], time='time', unit='run', condition='add', value='fdr')
+			tspl = sns.tsplot(data=res['fdrest_pd'], time='time', unit='run', condition='add', value='fdr')
+			tspl.axes.set_ylim((0.0, 1.0))
+			tspl.axes.set_xlim((0.0, max(res['fdrest_pd'].groupby('add').max()['time'])))
+			# adducts_irrelevant = res['fdrest_pd']['add'][np.where( res['fdrest_pd']['fdr'] > 1 )[0] ]
+			# last_index = np.max([ len(res['fdrest_pd']) if len(np.where(adducts_irrelevant == a)[0]) == 0 else np.where(adducts_irrelevant == a)[0][0] for a in adducts ])
 		elif graph_type == 'evst':
 			ax = plt.axes()
 			ax.set_ylim((0.0, 1.0))
@@ -333,16 +336,20 @@ def compute_metrics(res):
 	est_correct = [ x[0][1] in adducts for x in sorted_w ]
 
 	def get_fdr(correct_array):
-		return [ 1 - ( np.sum(correct_array[:i]) / float(i) ) for i in xrange(1, len(correct_array)) ]
+		sums = np.cumsum(correct_array)
+		return np.array([ 1 - ( sums[i] / float(i) ) for i in xrange(len(correct_array)) ])
 
 	def get_est_fdr(correct_array):
-		sums = [np.sum(correct_array[:i]) for i in xrange(1, len(correct_array))]
-		return [ (i+1-sums[i]) / float(sums[i]) if sums[i] > 0 else 10.0 for i in xrange(len(sums)) ]
+		sums = np.cumsum(correct_array)
+		return np.array([ (i+1-sums[i]) / float(sums[i]) if sums[i] > 0 else 10.0 for i in xrange(len(sums)) ])
 
 	### FDR for graphs
-	num_random_runs = 20
+	num_random_runs = 10
 	res["fdr"] = get_fdr(correct) if true_w != None else None
 	res["fdrest"] = get_est_fdr(est_correct)
+	where_fdrest_gtone = np.where(np.array(res['fdrest']) > 1)[0]
+	meaningful_limit = min(len(est_correct), 5*where_fdrest_gtone[min(len(where_fdrest_gtone)-1, 100)])
+	meaningful_sorted_w = np.array(sorted_w[:meaningful_limit])
 	res["fdr_a"] = {}
 	res["fdrest_a"] = {}
 	res["num_mols_before_10percent"] = {}
@@ -354,24 +361,27 @@ def compute_metrics(res):
 	    if true_w != None:
 	    	tmp_wherelarger10percent = np.where(np.array(res['fdr_a'][a]) <= .1)[0]
 	    	res["num_mols_before_10percent"][a] = np.max(tmp_wherelarger10percent) if len(tmp_wherelarger10percent) > 0 else 0
-	    ind_est_incorrect = [ i for i in xrange(len(sorted_w)) if not (sorted_w[i][0][1] in adducts) ]
+	    ind_est_incorrect = [ i for i in xrange(len(meaningful_sorted_w)) if not (meaningful_sorted_w[i][0][1] in adducts) ]
 	    for run in xrange(num_random_runs):
 	    	try:
-	    		cur_rand_choice = np.random.choice(ind_est_incorrect, len(sorted_w)-len(ind_est_incorrect), replace=False)
+	    		cur_rand_choice = np.random.choice(ind_est_incorrect, len(meaningful_sorted_w)-len(ind_est_incorrect), replace=False)
 	    	except:
 	    		cur_rand_choice = []
-	    	cur_est_correct = [ sorted_w[i][0][1] in adducts for i in xrange(len(sorted_w)) if sorted_w[i][0][1] == a or i in cur_rand_choice ]
+	    	cur_est_correct = [ meaningful_sorted_w[i][0][1] in adducts for i in xrange(len(meaningful_sorted_w)) if meaningful_sorted_w[i][0][1] == a or i in cur_rand_choice ]
+	    	cur_result_est_fdr = get_est_fdr(cur_est_correct)
 	    	if true_w != None:
 	    		fdr_xlen = min( len(cur_est_correct)-1, len(res["fdr_a"][a]) )
 	    		fdr_est_dict['truefdr'].extend(res["fdr_a"][a][:fdr_xlen])
 	    	else:
-	    		fdr_xlen = len(cur_est_correct)-1
+	    		fdr_whereirrelevant = np.where(cur_result_est_fdr > 1.25)[0]
+	    		fdr_xlen = min( len(cur_est_correct)-1, fdr_whereirrelevant[0] if len(fdr_whereirrelevant) > 0 else 100000 )
 	    		fdr_est_dict['truefdr'].extend([0] * fdr_xlen)
 	    	fdr_est_dict['add'].extend([a] * fdr_xlen )
-	    	fdr_est_dict['fdr'].extend(get_est_fdr(cur_est_correct)[:fdr_xlen])
+	    	fdr_est_dict['fdr'].extend(cur_result_est_fdr[:fdr_xlen])
 	    	fdr_est_dict['run'].extend([run] * fdr_xlen )
 	    	fdr_est_dict['time'].extend( range(1, fdr_xlen+1) )
 	res['fdrest_pd'] = pd.DataFrame(fdr_est_dict)
+	# res['plotting_limit'] = plotting_limit
 
 	### Metrics
 
@@ -417,9 +427,9 @@ def add_results_pipeline(dirname):
 			my_print("\tloading preprocessed %s from %s..." % (fname, fname_pickled) )
 			pickled_res = cPickle.load(open(fname_pickled))
 		else:
-			my_print('\t...recreating preprocessed file...')
 			all_res = {}
 			all_res['name'] = ".".join(fname.split('/')[-1].split('.')[:-1])
+			my_print('\t...recreating preprocessed file for %s...' % all_res['name'])
 			if (all_res['name'] == 'decoy_dataset_chemnoise_centroids_IMS_spatial_all_adducts_full_results'):
 				all_res['name'] = 'pipeline'
 			if all_res['name'] in eval_result_names:
@@ -498,8 +508,8 @@ def main():
 	try:
 		read_correct_intensities()
 		# add_results_data('log_results')
-		add_results_pipeline('results_pipeline')
-		# add_results_pipeline('results_tmp')
+		# add_results_pipeline('results_pipeline')
+		add_results_pipeline('results_andy')
 		port = 6789
 		torn_app = Application()
 		http_server = tornado.httpserver.HTTPServer(torn_app)
