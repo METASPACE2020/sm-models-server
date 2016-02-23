@@ -1,0 +1,121 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+{% end %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+
+      function get_chebi_link(id, txt) {
+        return "<a target=\"_blank\" href=\"https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:" + id + "\"><small><i class=\"fa fa-external-link\"></i></small> <b>" + txt + "</b></a>";
+      }
+
+      $(document).ready(function() {
+        var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
+        $('#heading-result').text(result_id.toString());
+        var tbl_modal = $('#tbl-chebiflist').dataTable( {
+          data: [],
+          // order: [[ 4, "asc" ]],
+          aLengthMenu: [20, 50, 100],
+          "columnDefs": [
+            { "render": function ( data, type, row ) { return get_chebi_link(row[0], data); }, "targets": [0, 2] },
+            // { "render": function ( data, type, row ) { return '<a href="#" data-toggle="modal" data-target="#modFList" data-whatever="' + row[1] + '"><small><i class="fa fa-list"></i></small> <b>' + data + '</b></a>'; }, "targets": [2] },
+          ]
+        } );
+
+        $.getJSON("/ajax/chebimain/", function (data) {
+          var tbldata = data["data"];
+          var tbl = $('#tbl-chebimain').dataTable( {
+            data: tbldata,
+            order: [[ 4, "asc" ]],
+            aLengthMenu: [100, 200, 500],
+            "columnDefs": [
+              { "render": function ( data ) { return data.toFixed(2); }, "targets": [4] },
+              // { "render": function ( data ) { return "<a target=\"_blank\" href=\"https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:" + data + "\">" + data + "</a>"; }, "targets": [0] },
+              { "render": function ( data, type, row ) { return get_chebi_link(row[0], data); }, "targets": [0, 1] },
+              { "render": function ( data, type, row ) { return '<a href="#" data-toggle="modal" data-target="#modFList" data-id="' + row[0] + '" data-title="' + row[1] + '"><small><i class="fa fa-list"></i></small> <b>' + data + '</b></a>'; }, "targets": [2] },
+            ]
+          } );
+          $('#modFList').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var f_title = button.data('title'); // Extract info from data-* attributes
+            var f_id = button.data('id'); // Extract info from data-* attributes
+            $(this).find("#pModChebiTitle").html('Sum formulas for class <b>' + f_title + '</b>');
+            $.getJSON("/ajax/chebiflist/" + f_id, function (data) {
+              var tbldata_modal = data["data"];
+              tbl_modal.fnClearTable();
+              tbl_modal.fnAddData(tbldata_modal);
+            });
+          });
+        });
+      } );
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">ChEBI processing</div>
+      <div class="panel-body">
+        <p>The table shows aggregate results of the substances' parents with respect to the <i>is_a</i> relation from the ChEBI ontology. I.e., for each substance I looked for its parent in the ontology, then for each parent aggregated its child subformulas, and then computed estimated FDR on them; I haven't looked further up the tree yet. For every set of sum formulas, the table shows the sum of estimated FDR values for the first 200 positions (area under estimated FDR curve).</p>
+        <p>Click on a name or ChEBI id to visit its ChEBI page; click on the number of sum formulas to see a list of them.</p>
+      </div>
+    </div>
+    <div class="panel panel-primary">
+      <div class="panel-heading">Results for ChEBI classes</div>
+       <table id="tbl-chebimain" class="table table-striped" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>ChEBI id</th>
+            <th width="40%">Name</th>
+            <th># sum formulas</th>
+            <th># sf with adducts</th>
+            <th>Total eFDR, top 200</th>
+          </tr>
+        </thead>
+   
+        <tfoot>
+          <tr>
+            <th>ChEBI id</th>
+            <th>Name</th>
+            <th># sum formulas</th>
+            <th># sf with adducts</th>
+            <th>Total eFDR, top 200</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+  <div id="modFList" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-lg">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="pModChebiTitle"></h4>
+        </div>
+        <div class="modal-body" id="pModChebiBody">
+           <table id="tbl-chebiflist" class="table table-striped" cellspacing="0" width="100%">
+            <thead>
+              <tr>
+                <th>ChEBI id</th>
+                <th>Sum formula</th>
+                <th width="60%">Name</th>
+              </tr>
+            </thead>
+       
+            <tfoot>
+              <tr>
+                <th>ChEBI id</th>
+                <th>Sum formula</th>
+                <th width="60%">Name</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+{% end %}

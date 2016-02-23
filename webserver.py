@@ -43,6 +43,9 @@ parser.add_argument('--gifs', dest='gifs', type=str, help='directory with animat
 parser.set_defaults(gifs='static/rnn_gifs')
 args = parser.parse_args()
 
+chebi_mainresults = []
+chebi_formulalists = []
+
 dirname_pickled = 'results_pickled'
 
 adducts = ['H', 'K', 'Na']
@@ -154,10 +157,14 @@ class AjaxHandler(tornado.web.RequestHandler):
 			res_dict = self.make_datatable_dict(draw, count, [[ row[x] for x in sql_fields[query_id] ] for row in res])
 		elif query_id in ['metrics']:
 			res_array = [ [x['dataset'], x['name'], x['num_mols_before_10percent']['H'], x['num_mols_before_10percent']['K'], x['num_mols_before_10percent']['Na'], x['name'], x['name'], x['name'], x['name']] + [ x.get(k, -1) for k in metric_fields ] for x in eval_results ]
-			print '%s' % res_array
 			res_dict = self.make_datatable_dict(draw, len(res_array), res_array)
 		elif query_id in ['gifs']:
 			res_dict = self.make_datatable_dict(draw, len(gif_results), gif_results)
+		elif query_id in ['chebimain']:
+			res_dict = self.make_datatable_dict(draw, len(chebi_mainresults), chebi_mainresults)
+		elif query_id in ['chebiflist']:
+			my_print("chebi flist for %d" % int(input_id))
+			res_dict = self.make_datatable_dict(draw, len(chebi_formulalists.get(int(input_id), [])), chebi_formulalists.get(int(input_id), []))
 		my_print("ajax %s processed, returning..." % query_id)
 		# my_print("%s" % res_dict)
 		self.write(json.dumps(res_dict, cls = DateTimeEncoder))
@@ -296,6 +303,7 @@ class Application(tornado.web.Application):
 			(r"^/ajax/(.*)", AjaxHandler),
 			(r"^/fdrimage/(.*)", FDRImageHandler),
 			(r"^/metrics/", SimpleHtmlHandler),
+			(r"^/chebi/", SimpleHtmlHandler),
 			(r"^/upload/", SimpleHtmlHandler),
 			(r"^/fdr/", SimpleHtmlHandler),
 			# (r"^/rnn_gifs/(.*)", tornado.web.StaticFileHandler, {'path' : '/static/rnn_gifs'}),
@@ -505,16 +513,20 @@ def read_correct_intensities():
 
 
 def main():
+	global chebi_mainresults, chebi_formulalists
 	try:
 		read_correct_intensities()
 		# add_results_data('log_results')
 		# add_results_pipeline('results_pipeline')
-		add_results_pipeline('results_andy')
+		# add_results_pipeline('results_andy')
+		chebi_mainresults = cPickle.load(open('data/chebi_mainresults.pkl'))
+		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
+		
 		port = 6789
 		torn_app = Application()
 		http_server = tornado.httpserver.HTTPServer(torn_app)
-		http_server.listen(port)
 		my_print("Starting server, listening to port %d..." % port)
+		http_server.listen(port)
 		## set periodic updates
 		# tornado.ioloop.IOLoop.instance().add_timeout(timedelta(seconds=5), torn_app.update_all_jobs_callback)
 		## start loop
