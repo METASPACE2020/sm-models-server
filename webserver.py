@@ -161,6 +161,7 @@ class AjaxHandler(tornado.web.RequestHandler):
 		elif query_id in ['gifs']:
 			res_dict = self.make_datatable_dict(draw, len(gif_results), gif_results)
 		elif query_id in ['chebimain']:
+			# my_print("%s" % chebi_mainresults)
 			res_dict = self.make_datatable_dict(draw, len(chebi_mainresults), chebi_mainresults)
 		elif query_id in ['chebiflist']:
 			my_print("chebi flist for %d" % int(input_id))
@@ -518,7 +519,7 @@ def main():
 		read_correct_intensities()
 		# add_results_data('log_results')
 		# add_results_pipeline('results_pipeline')
-		add_results_pipeline('results_andy')
+		# add_results_pipeline('results_andy')
 		chebi_mainresults = cPickle.load(open('data/chebi_mainresults.pkl'))
 		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
 		
