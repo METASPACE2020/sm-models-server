@@ -547,7 +547,7 @@ def main():
 		chebi_maxvalue = np.max(chebi_values.values())
 		chebi_names = cPickle.load(open('data/chebi_names.pkl'))
 		chebi_formulas = cPickle.load(open('data/chebi_formulas.pkl'))
-		# chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
+		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
 		
 		port = 6789
 		torn_app = Application()
