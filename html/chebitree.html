@@ -1,0 +1,54 @@
+{% extends "main.html" %}
+
+{% block add_includes %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/static/css/jstreethemes/default/style.min.css" rel="stylesheet">
+
+    <script src="/static/js/jstree.min.js"></script>
+{% end %}
+
+{% block init_script %}
+    <script type="text/javascript" class="init">
+
+      function get_chebi_link(id, txt) {
+        return "<a target=\"_blank\" href=\"https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:" + id + "\"><small><i class=\"fa fa-external-link\"></i></small> <b>" + txt + "</b></a>";
+      }
+
+      $(document).ready(function() {
+        $('#chebitree').jstree({
+          'core' : {
+            'data' : {
+              "url" : function (node) {
+                if (node.id === "#") {
+                  return "/ajax/chebitreenode/0";
+                } else {
+                  return "/ajax/chebitreenode/" + node.id.toString();
+                }
+              },
+              "data" : function (node) {
+                // return { "id" : node.id };
+              },
+              "dataType" : "json"
+            }
+          }
+        });
+      });
+    </script>
+{% end %}
+
+{% block body %}
+    <div class="panel panel-primary">
+      <div class="panel-heading">ChEBI tree view</div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-lg-4"><p>Tree view of the ChEBI grouped results, color coded as shown on the right.</p></div>
+          <div class="col-lg-8"><img width="100%" src="/static/images/chebi_colormap.png"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div id="chebitree"></div>
+    </div>
+  </div>
+</div>
+{% end %}
