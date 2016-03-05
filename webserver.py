@@ -44,7 +44,7 @@ parser.add_argument('--gifs', dest='gifs', type=str, help='directory with animat
 parser.set_defaults(gifs='static/rnn_gifs')
 args = parser.parse_args()
 
-chebi_colormap = matplotlib.cm.get_cmap('CMRmap')
+chebi_colormap = matplotlib.cm.get_cmap('jet')
 
 chebi_mainresults = []
 chebi_formulalists = []
