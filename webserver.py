@@ -35,6 +35,7 @@ import decimal
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import matplotlib.cm
 import seaborn as sns
 import cStringIO
 
@@ -42,6 +43,8 @@ parser = argparse.ArgumentParser(description='IMS evaluation results webserver.'
 parser.add_argument('--gifs', dest='gifs', type=str, help='directory with animated gif subdirectories')
 parser.set_defaults(gifs='static/rnn_gifs')
 args = parser.parse_args()
+
+chebi_colormap = matplotlib.cm.get_cmap('CMRmap')
 
 chebi_mainresults = []
 chebi_formulalists = []
@@ -82,6 +85,10 @@ my_linestyles = ['-', '--', ':']
 
 def my_print(s):
     print "[" + str(datetime.now()) + "] " + s
+
+def get_chebi_color(r):
+	c = chebi_colormap( 0.8 * chebi_values.get(r, 0.0) / (chebi_maxvalue) )
+	return "%02x%02x%02x" % (255*c[0], 255*c[1], 255*c[2])
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -161,8 +168,20 @@ class AjaxHandler(tornado.web.RequestHandler):
 		elif query_id in ['gifs']:
 			res_dict = self.make_datatable_dict(draw, len(gif_results), gif_results)
 		elif query_id in ['chebimain']:
-			# my_print("%s" % chebi_mainresults)
 			res_dict = self.make_datatable_dict(draw, len(chebi_mainresults), chebi_mainresults)
+		elif query_id in ['chebitreenode']:
+			node_id = int(input_id)
+			if node_id == 0:
+				res_array = chebi_root_nodes
+				my_print("%d" % len(chebi_root_nodes))
+			else:
+				res_array = chebi_children[node_id]
+			res_dict = [ {
+				"id" : r,
+				"text" : "(<b>%d</b>) [%.3f] [%s] <b>%s</b>" % ( chebi_rechild_len.get(r, 0), chebi_values.get(r, 0.0), chebi_formulas.get(r, "none"), chebi_names.get(r, "") ),
+				"children" : True if len(chebi_children.get(r, [])) > 0 else [],
+				"li_attr" : { "style" : "color:#%s;" % get_chebi_color(r) } 
+			} for r in sorted(res_array, key=lambda x: chebi_rechild_len.get(x, 0), reverse=True) ]
 		elif query_id in ['chebiflist']:
 			my_print("chebi flist for %d" % int(input_id))
 			res_dict = self.make_datatable_dict(draw, len(chebi_formulalists.get(int(input_id), [])), chebi_formulalists.get(int(input_id), []))
@@ -305,6 +324,7 @@ class Application(tornado.web.Application):
 			(r"^/fdrimage/(.*)", FDRImageHandler),
 			(r"^/metrics/", SimpleHtmlHandler),
 			(r"^/chebi/", SimpleHtmlHandler),
+			(r"^/chebitree/", SimpleHtmlHandler),
 			(r"^/upload/", SimpleHtmlHandler),
 			(r"^/fdr/", SimpleHtmlHandler),
 			# (r"^/rnn_gifs/(.*)", tornado.web.StaticFileHandler, {'path' : '/static/rnn_gifs'}),
@@ -514,14 +534,20 @@ def read_correct_intensities():
 
 
 def main():
-	global chebi_mainresults, chebi_formulalists
+	global chebi_mainresults, chebi_formulalists, chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_names, chebi_values, chebi_maxvalue, chebi_formulas, chebi_rechild_len
 	try:
-		read_correct_intensities()
+		# read_correct_intensities()
 		# add_results_data('log_results')
 		# add_results_pipeline('results_pipeline')
 		# add_results_pipeline('results_andy')
+		chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_rechild_len = cPickle.load(open('data/chebi_treenodes.pkl'))
+		my_print("in: %d" % (46579 in chebi_root_nodes))
 		chebi_mainresults = cPickle.load(open('data/chebi_mainresults.pkl'))
-		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
+		chebi_values = { k : r[4] for r in chebi_mainresults for k in r[0] }
+		chebi_maxvalue = np.max(chebi_values.values())
+		chebi_names = cPickle.load(open('data/chebi_names.pkl'))
+		chebi_formulas = cPickle.load(open('data/chebi_formulas.pkl'))
+		# chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
 		
 		port = 6789
 		torn_app = Application()
