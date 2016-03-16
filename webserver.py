@@ -175,13 +175,13 @@ class AjaxHandler(tornado.web.RequestHandler):
 				res_array = chebi_root_nodes
 				my_print("%d" % len(chebi_root_nodes))
 			else:
-				res_array = chebi_children[node_id]
+				res_array = [x for x in chebi_children[node_id] if x in chebi_values]
 			res_dict = [ {
 				"id" : r,
 				"text" : "(<b>%d</b>) [%.3f] [%s] <b>%s</b>" % ( chebi_rechild_len.get(r, 0), chebi_values.get(r, 0.0), chebi_formulas.get(r, "none"), chebi_names.get(r, "") ),
 				"children" : True if len(chebi_children.get(r, [])) > 0 else [],
 				"li_attr" : { "style" : "color:#%s;" % get_chebi_color(r) } 
-			} for r in sorted(res_array, key=lambda x: chebi_rechild_len.get(x, 0), reverse=True) ]
+			} for r in sorted(res_array, key=lambda x: chebi_values.get(x, 0)) ]
 		elif query_id in ['chebiflist']:
 			my_print("chebi flist for %d" % int(input_id))
 			res_dict = self.make_datatable_dict(draw, len(chebi_formulalists.get(int(input_id), [])), chebi_formulalists.get(int(input_id), []))
@@ -542,12 +542,13 @@ def main():
 		# add_results_pipeline('results_andy')
 		chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_rechild_len = cPickle.load(open('data/chebi_treenodes.pkl'))
 		my_print("in: %d" % (46579 in chebi_root_nodes))
-		chebi_mainresults = cPickle.load(open('data/chebi_mainresults.pkl'))
+		chebi_mainresults = cPickle.load(open('data/chebi_mainresults_2.pkl'))
 		chebi_values = { k : r[4] for r in chebi_mainresults for k in r[0] }
 		chebi_maxvalue = np.max(chebi_values.values())
 		chebi_names = cPickle.load(open('data/chebi_names.pkl'))
 		chebi_formulas = cPickle.load(open('data/chebi_formulas.pkl'))
 		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
+		chebi_root_nodes = sorted([ x for x in chebi_root_nodes if x in chebi_values ], key=lambda x : chebi_values[x])
 		
 		port = 6789
 		torn_app = Application()
