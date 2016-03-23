@@ -19,7 +19,6 @@ import tornado.httpserver
 from tornado.concurrent import Future
 from tornado import gen
 from tornado.ioloop import IOLoop
-import tornpsql
 
 import numpy as np
 import pandas as pd
