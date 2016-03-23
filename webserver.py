@@ -7,7 +7,6 @@ import os
 import cPickle
 from datetime import datetime,time,date,timedelta
 from os import curdir,sep,path
-import psycopg2,psycopg2.extras
 import json
 import glob
 import codecs
@@ -539,10 +538,10 @@ def main():
 		# read_correct_intensities()
 		# add_results_data('log_results')
 		# add_results_pipeline('results_pipeline')
-		# add_results_pipeline('results_andy')
+		# add_results_pipeline('results_chebi')
 		chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_rechild_len = cPickle.load(open('data/chebi_treenodes.pkl'))
 		my_print("in: %d" % (46579 in chebi_root_nodes))
-		chebi_mainresults = cPickle.load(open('data/chebi_mainresults_2.pkl'))
+		chebi_mainresults = cPickle.load(open('data/chebi_mainresults_3.pkl'))
 		chebi_values = { k : r[4] for r in chebi_mainresults for k in r[0] }
 		chebi_maxvalue = np.max(chebi_values.values())
 		chebi_names = cPickle.load(open('data/chebi_names.pkl'))
