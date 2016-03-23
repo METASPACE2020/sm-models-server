@@ -303,7 +303,7 @@ class FDRImageHandler(tornado.web.RequestHandler):
 			    ax.fill_between(range(1, len(res[a]['mn'])+1), res[a]['mn']-res[a]['st'], res[a]['mn']+res[a]['st'], color=adduct_colors[a], alpha=0.2)
 			    ax.plot(range(1, len(res[a]['mn'])+1), res[a]['mn'], color=adduct_colors[a], linewidth=2, label=a)
 			ax.set_ylim((0.0, 1.0))
-			ax.set_xlim((1, np.max([len(res[x]['mn']) for x in res])))
+			ax.set_xlim((1, min(100, np.max([len(res[x]['mn']) for x in res])) ))
 			plt.legend(loc='lower right')
 		else:
 			for a in adducts:
