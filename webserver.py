@@ -46,10 +46,13 @@ chebi_colormap = matplotlib.cm.get_cmap('jet')
 
 chebi_mainresults = []
 chebi_formulalists = []
+chebi_graph_data = {}
+
 
 dirname_pickled = 'results_pickled'
 
 adducts = ['H', 'K', 'Na']
+adduct_colors = {'H' : 'blue', 'K' : 'red', 'Na' : 'darkgreen'}
 correct_fnames = {
 	'SIM0001_twosquares_matlab'		: 'data/hmdb_sim_list.txt',
 	'SIM0002_simulated_spheroid'	: 'data/true_simulated_spheroid.txt',
@@ -183,6 +186,10 @@ class AjaxHandler(tornado.web.RequestHandler):
 		elif query_id in ['chebiflist']:
 			my_print("chebi flist for %d" % int(input_id))
 			res_dict = self.make_datatable_dict(draw, len(chebi_formulalists.get(int(input_id), [])), chebi_formulalists.get(int(input_id), []))
+			thr = chebi_msm_thresh.get(int(input_id), {'H' : 1.0, 'K' : 1.0, 'Na' : 1.0})
+			res_dict['thrH'] = thr['H']
+			res_dict['thrK'] = thr['K']
+			res_dict['thrNa'] = thr['Na']
 		my_print("ajax %s processed, returning..." % query_id)
 		# my_print("%s" % res_dict)
 		self.write(json.dumps(res_dict, cls = DateTimeEncoder))
@@ -263,6 +270,7 @@ class FDRImageHandler(tornado.web.RequestHandler):
 			tspl.axes.set_xlim((0.0, max(res['fdrest_pd'].groupby('add').max()['time'])))
 			# adducts_irrelevant = res['fdrest_pd']['add'][np.where( res['fdrest_pd']['fdr'] > 1 )[0] ]
 			# last_index = np.max([ len(res['fdrest_pd']) if len(np.where(adducts_irrelevant == a)[0]) == 0 else np.where(adducts_irrelevant == a)[0][0] for a in adducts ])
+			plt.legend(loc='upper right')
 		elif graph_type == 'evst':
 			ax = plt.axes()
 			ax.set_ylim((0.0, 1.0))
@@ -274,6 +282,7 @@ class FDRImageHandler(tornado.web.RequestHandler):
 				ax.fill_between(cur_x, cur_mean - cur_std, cur_mean + cur_std, color=col, alpha=0.3)
 				ax.plot(cur_x, cur_mean, label=a, color=col)
 			# sns.jointplot("truefdr", "fdr", data=res['fdrest_pd'], kind='reg', xlim=(0,0.5), ylim=(0,0.5), size=10)
+			plt.legend(loc='upper right')
 		elif graph_type == 'cmp':
 			ks = res.keys()
 			ax = plt.axes()
@@ -285,10 +294,21 @@ class FDRImageHandler(tornado.web.RequestHandler):
 					a = adducts[i]
 					my_print('\t\t%s\t%s\t%s' % (a, sns.color_palette()[i], stl) )
 					ax.plot(range(1, len(res[k]["fdr_a"][a])+1), res[k]["fdr_a"][a], label=k + ', ' + a, color=sns.color_palette()[i], linestyle=stl)
+			plt.legend(loc='upper right')
+		elif graph_type == 'chebi':
+			fig = plt.figure(figsize=(20,10))
+			sns.set_style("darkgrid")
+			ax = plt.axes()
+			for a in adducts:
+			    ax.fill_between(range(1, len(res[a]['mn'])+1), res[a]['mn']-res[a]['st'], res[a]['mn']+res[a]['st'], color=adduct_colors[a], alpha=0.2)
+			    ax.plot(range(1, len(res[a]['mn'])+1), res[a]['mn'], color=adduct_colors[a], linewidth=2, label=a)
+			ax.set_ylim((0.0, 1.0))
+			ax.set_xlim((1, np.max([len(res[x]['mn']) for x in res])))
+			plt.legend(loc='lower right')
 		else:
 			for a in adducts:
 			    plt.plot(range(1, len(res["fdr_a"][a])+1), res["fdr_a"][a], label=a)
-		plt.legend(loc='upper right')
+			plt.legend(loc='upper right')
 		sio = cStringIO.StringIO()
 		plt.savefig(sio, format=format, bbox_inches='tight')
 		return sio
@@ -298,12 +318,16 @@ class FDRImageHandler(tornado.web.RequestHandler):
 		my_print(slug)
 		arr_slug = slug.split('/')
 		graph_type = arr_slug[0]
-		if len(arr_slug) == 2:
-			my_print("Creating FDR image for result %s..." % arr_slug[1])
-			sio = self.make_fdr_image(eval_results[eval_result_names[arr_slug[1]]], graph_type=graph_type)
+		if graph_type == 'chebi':
+			my_print("Creating FDR image for chebi result %s..." % arr_slug[1])
+			sio = self.make_fdr_image(chebi_graph_data[int(arr_slug[1])], graph_type=graph_type)
 		else:
-			my_print("Creating FDR image for results %s..." % arr_slug[1:])
-			sio = self.make_fdr_image({ k : eval_results[eval_result_names[k]] for k in arr_slug[1:]}, graph_type='cmp')
+			if len(arr_slug) == 2:
+				my_print("Creating FDR image for result %s..." % arr_slug[1])
+				sio = self.make_fdr_image(eval_results[eval_result_names[arr_slug[1]]], graph_type=graph_type)
+			else:
+				my_print("Creating FDR image for results %s..." % arr_slug[1:])
+				sio = self.make_fdr_image({ k : eval_results[eval_result_names[k]] for k in arr_slug[1:]}, graph_type='cmp')
 		self.set_header("Content-Type", "image/png")
 		self.write(sio.getvalue())
 
@@ -532,20 +556,27 @@ def read_correct_intensities():
 
 
 def main():
-	global chebi_mainresults, chebi_formulalists, chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_names, chebi_values, chebi_maxvalue, chebi_formulas, chebi_rechild_len
+	global chebi_mainresults, chebi_formulalists, chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_names, chebi_values, chebi_maxvalue, chebi_formulas, chebi_rechild_len, chebi_graph_data, chebi_msm_thresh
 	try:
 		# read_correct_intensities()
 		# add_results_data('log_results')
 		# add_results_pipeline('results_pipeline')
 		# add_results_pipeline('results_chebi')
 		chebi_root_nodes, chebi_tree_nodes, chebi_children, chebi_rechild_len = cPickle.load(open('data/chebi_treenodes.pkl'))
-		my_print("in: %d" % (46579 in chebi_root_nodes))
+		my_print("loading chebi:")
+		my_print("\tmainresults...")
 		chebi_mainresults = cPickle.load(open('data/chebi_mainresults_3.pkl'))
 		chebi_values = { k : r[4] for r in chebi_mainresults for k in r[0] }
 		chebi_maxvalue = np.max(chebi_values.values())
+		my_print("\tnames...")
 		chebi_names = cPickle.load(open('data/chebi_names.pkl'))
+		my_print("\tformulas...")
 		chebi_formulas = cPickle.load(open('data/chebi_formulas.pkl'))
+		my_print("\tformula lists...")
 		chebi_formulalists = cPickle.load(open('data/chebi_formulalists.pkl'))
+		my_print("\trest...")
+		chebi_graph_data = cPickle.load(open('data/chebi_graph_data.pkl'))
+		chebi_msm_thresh = cPickle.load(open('data/chebi_msm_thresh.pkl'))
 		chebi_root_nodes = sorted([ x for x in chebi_root_nodes if x in chebi_values ], key=lambda x : chebi_values[x])
 		
 		port = 6789

@@ -1,6 +1,8 @@
 {% extends "main.html" %}
 
 {% block add_includes %}
+    <link rel="stylesheet" href="{{ static_url("js/fancybox/source/jquery.fancybox.css") }}" type="text/css" media="screen" />
+    <script type="text/javascript" src="{{ static_url("js/fancybox/source/jquery.fancybox.pack.js") }}" ></script>
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
 {% end %}
 
@@ -11,15 +13,20 @@
         return "<a target=\"_blank\" href=\"https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:" + id + "\"><small><i class=\"fa fa-external-link\"></i></small> <b>" + txt + "</b></a>";
       }
 
+      var tbldata_modal = [];
+
       $(document).ready(function() {
         var result_id = window.location.pathname.split('/')[window.location.pathname.split('/').length-1];
         $('#heading-result').text(result_id.toString());
         var tbl_modal = $('#tbl-chebiflist').dataTable( {
           data: [],
-          // order: [[ 4, "asc" ]],
+          order: [[ 3, "desc" ]],
           aLengthMenu: [20, 50, 100],
           "columnDefs": [
             { "render": function ( data, type, row ) { return get_chebi_link(row[0], data); }, "targets": [0, 2] },
+            { "render": function ( data ) { if (data >= tbldata_modal["thrH"]) { return "<b>" + data.toFixed(2) + "</b>"; } return data.toFixed(2); }, "targets": [3] },
+            { "render": function ( data ) { if (data >= tbldata_modal["thrK"]) { return "<b>" + data.toFixed(2) + "</b>"; } return data.toFixed(2); }, "targets": [4] },
+            { "render": function ( data ) { if (data >= tbldata_modal["thrNa"]) { return "<b>" + data.toFixed(2) + "</b>"; } return data.toFixed(2); }, "targets": [5] },
             // { "render": function ( data, type, row ) { return '<a href="#" data-toggle="modal" data-target="#modFList" data-whatever="' + row[1] + '"><small><i class="fa fa-list"></i></small> <b>' + data + '</b></a>'; }, "targets": [2] },
           ]
         } );
@@ -28,9 +35,15 @@
           var tbldata = data["data"];
           var tbl = $('#tbl-chebimain').dataTable( {
             data: tbldata,
-            order: [[ 5, "asc" ]],
+            order: [[ 4, "asc" ]],
             aLengthMenu: [100, 200, 500],
             "columnDefs": [
+              { "render": function ( data, type, row ) { 
+                if (row[7] == 100) {
+                  return '';
+                } else {
+                  return '<button type="button" class="btn btn-sm btn-info fancybox-ajax" href="/fdrimage/chebi/' + row[0][0] + '">FDR</button>'; 
+                } }, "targets": [3] },
               { "render": function ( data ) { 
                 if (data == 100) {
                   return "";
@@ -42,25 +55,26 @@
               // { "render": function ( data ) { return "<a target=\"_blank\" href=\"https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:" + data + "\">" + data + "</a>"; }, "targets": [0] },
               { "render": function ( data, type, row ) { var res = "";
                 for (var i=0; i<data.length; i++) {
-                  res += get_chebi_link(row[0][i], data[i])
+                  res += get_chebi_link(row[0][i], "[" + row[0][i] + "] " + data[i]);
                   if (i < data.length-1) {
                     res += '<br/>'
                   }
                 }
-                return res; }, "targets": [0, 1] },
+                return res; }, "targets": [1] },
               { "render": function ( data, type, row ) { return '<a href="#" data-toggle="modal" data-target="#modFList" data-id="' + row[0][0] + '" data-title="' + row[1][0] + '"><small><i class="fa fa-list"></i></small> <b>' + data + '</b></a>'; }, "targets": [2] },
-              { "visible" : false, "targets" : [3, 5, 17, 14, 11] }
+              { "visible" : false, "targets" : [0, 5, 17, 14, 11] }
             ]
           } );
+          $(".fancybox-ajax").fancybox({type : "image"});
           $('#modFList').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget); // Button that triggered the modal
             var f_title = button.data('title'); // Extract info from data-* attributes
             var f_id = button.data('id'); // Extract info from data-* attributes
             $(this).find("#pModChebiTitle").html('Sum formulas for class <b>' + f_title + '</b>');
             $.getJSON("/ajax/chebiflist/" + f_id, function (data) {
-              var tbldata_modal = data["data"];
+              tbldata_modal = data;
               tbl_modal.fnClearTable();
-              tbl_modal.fnAddData(tbldata_modal);
+              tbl_modal.fnAddData(tbldata_modal["data"]);
             });
           });
         });
@@ -84,7 +98,7 @@
             <th width="10%">ChEBI id</th>
             <th width="40%">Name</th>
             <th># sum formulas</th>
-            <th># sf with adducts</th>
+            <th></th>
             <th colspan="2">eFDR, SN</th>
             <th colspan="3">eFDR, random subsets (AP's way), Top10</th>
             <th colspan="3">Annotations, H</th>
@@ -122,7 +136,7 @@
             <th>ChEBI id</th>
             <th>Name</th>
             <th># sum formulas</th>
-            <th># sf with adducts</th>
+            <th</th>
             <th colspan="2">eFDR, SN</th>
             <th colspan="3">eFDR, random subsets (AP's way), Top10</th>
             <th colspan="3">Annotations, H</th>
@@ -149,6 +163,9 @@
                 <th>ChEBI id</th>
                 <th>Sum formula</th>
                 <th width="60%">Name</th>
+                <th>MSM, H</th>
+                <th>MSM, K</th>
+                <th>MSM, Na</th>
               </tr>
             </thead>
        
@@ -157,6 +174,9 @@
                 <th>ChEBI id</th>
                 <th>Sum formula</th>
                 <th width="60%">Name</th>
+                <th>MSM, H</th>
+                <th>MSM, K</th>
+                <th>MSM, Na</th>
               </tr>
             </tfoot>
           </table>
